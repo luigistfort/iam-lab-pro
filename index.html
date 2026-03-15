@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAM-Lab-Pro | Identity & Access Management Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #090e1a;
+    --surface:  #0d1526;
+    --card:     #111d33;
+    --border:   #1e2f50;
+    --accent:   #0ea5e9;
+    --accent2:  #38bdf8;
+    --green:    #10b981;
+    --red:      #ef4444;
+    --yellow:   #f59e0b;
+    --purple:   #8b5cf6;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; display: flex; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px; min-width: 220px; background: var(--surface);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    padding: 0; z-index: 100; height: 100vh; position: fixed;
+  }
+  .logo {
+    padding: 20px 18px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #fff; font-weight: 800; flex-shrink: 0;
+  }
+  .logo-text { font-size: 14px; font-weight: 800; line-height: 1.2; }
+  .logo-sub { font-size: 9px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; }
+  .nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
+  .nav-section { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; padding: 8px 10px 4px; font-family: var(--mono); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--muted); transition: all 0.15s; margin-bottom: 1px; user-select: none;
+  }
+  .nav-item:hover { background: var(--card); color: var(--text); }
+  .nav-item.active { background: rgba(14,165,233,0.12); color: var(--accent); }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; background: var(--red); color: #fff;
+    font-size: 9px; font-family: var(--mono); padding: 1px 5px; border-radius: 10px;
+  }
+  .nav-badge.green { background: var(--green); }
+  .user-area {
+    padding: 12px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .user-info { font-size: 11px; }
+  .user-name { font-weight: 700; }
+  .user-role { color: var(--muted); font-family: var(--mono); font-size: 9px; }
+
+  /* ── MAIN ── */
+  .main { margin-left: 220px; flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(9,14,26,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; align-items: center; gap: 16px;
+  }
+  .page-title { font-size: 16px; font-weight: 800; flex: 1; }
+  .topbar-badge {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 4px 12px; border-radius: 20px; font-size: 11px;
+    font-family: var(--mono); color: var(--muted); display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .btn {
+    padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 12px; font-weight: 700;
+    transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-success { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+
+  .content { padding: 24px; flex: 1; }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── STAT CARDS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.blue::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.purple::before { background: var(--purple); }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-family: var(--mono); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .stat-card.blue .stat-value { color: var(--accent); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.red .stat-value { color: var(--red); }
+  .stat-card.purple .stat-value { color: var(--purple); }
+  .stat-sub { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .trend-up { color: var(--green); }
+  .trend-down { color: var(--red); }
+
+  /* ── GRIDS ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); font-family: var(--mono);
+    margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title span { color: var(--text); font-family: var(--sans); font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 800; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 8px 12px; color: var(--muted); font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(30,47,80,0.5); vertical-align: middle; }
+  tr:hover td { background: rgba(14,165,233,0.04); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 20px; font-size: 10px;
+    font-family: var(--mono); font-weight: 700;
+  }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .badge-blue { background: rgba(14,165,233,0.15); color: var(--accent); }
+  .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple); }
+  .badge-gray { background: rgba(100,116,139,0.15); color: var(--muted); }
+
+  /* ── RISK METER ── */
+  .risk-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(30,47,80,0.5); }
+  .risk-item:last-child { border: none; }
+  .risk-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .risk-name { font-size: 12px; font-weight: 700; flex: 1; }
+  .risk-reason { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .risk-bar-wrap { width: 80px; background: var(--surface); border-radius: 4px; height: 6px; overflow: hidden; }
+  .risk-bar { height: 100%; border-radius: 4px; }
+
+  /* ── AUDIT LOG ── */
+  .log-entry { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(30,47,80,0.4); align-items: flex-start; }
+  .log-entry:last-child { border: none; }
+  .log-time { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; padding-top: 2px; min-width: 80px; }
+  .log-event-id { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 4px; background: var(--surface); color: var(--accent); white-space: nowrap; }
+  .log-msg { font-size: 12px; line-height: 1.4; }
+  .log-user { color: var(--accent2); font-weight: 700; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; display: block; }
+  .form-input, .form-select {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 6px;
+    font-family: var(--sans); font-size: 13px; outline: none; transition: border 0.15s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+  .form-select option { background: var(--surface); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; width: 480px; max-width: 95vw;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .close-btn { cursor: pointer; color: var(--muted); font-size: 20px; }
+  .close-btn:hover { color: var(--text); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ── TOAST ── */
+  .toast-container { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; font-size: 13px; min-width: 280px;
+    display: flex; align-items: center; gap: 10px;
+    animation: slideIn 0.3s ease; border-left: 3px solid var(--green);
+  }
+  .toast.error { border-left-color: var(--red); }
+  .toast.warning { border-left-color: var(--yellow); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ── ACCESS REQUESTS ── */
+  .req-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .req-icon { font-size: 22px; flex-shrink: 0; }
+  .req-info { flex: 1; }
+  .req-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .req-meta { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .req-actions { display: flex; gap: 6px; }
+
+  /* ── PROGRESS ── */
+  .progress-bar { background: var(--surface); border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width 1s ease; }
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.red { background: var(--red); }
+  .progress-fill.yellow { background: var(--yellow); }
+
+  /* ── LIFECYCLE FLOW ── */
+  .flow-steps { display: flex; align-items: center; gap: 0; margin: 16px 0; }
+  .flow-step {
+    flex: 1; text-align: center; padding: 10px 6px;
+    background: var(--surface); border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border); border-left: 1px solid var(--border);
+    font-size: 11px; position: relative;
+  }
+  .flow-step:last-child { border-right: 1px solid var(--border); border-radius: 0 6px 6px 0; }
+  .flow-step:first-child { border-radius: 6px 0 0 6px; }
+  .flow-step.done { border-top-color: var(--green); background: rgba(16,185,129,0.08); }
+  .flow-step.active { border-top-color: var(--accent); background: rgba(14,165,233,0.08); }
+  .flow-step .step-num { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-bottom: 3px; }
+  .flow-step .step-label { font-weight: 700; font-size: 10px; }
+  .flow-arrow { color: var(--border); font-size: 12px; z-index: 1; }
+
+  /* ── ROLE MATRIX ── */
+  .matrix-wrap { overflow-x: auto; }
+  .matrix-table { border-collapse: collapse; font-size: 11px; width: 100%; }
+  .matrix-table th { padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); font-family: var(--mono); font-size: 9px; text-transform: uppercase; white-space: nowrap; }
+  .matrix-table td { padding: 6px 10px; border: 1px solid rgba(30,47,80,0.5); text-align: center; }
+  .matrix-table tr td:first-child { text-align: left; font-weight: 700; background: var(--surface); white-space: nowrap; }
+  .cell-yes { color: var(--green); font-weight: 700; }
+  .cell-no { color: rgba(100,116,139,0.3); }
+  .cell-partial { color: var(--yellow); font-weight: 700; }
+
+  /* ── SEARCH ── */
+  .search-box {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 7px 14px; border-radius: 6px; color: var(--text);
+    font-family: var(--sans); font-size: 13px; outline: none; width: 240px;
+    transition: border 0.15s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-header h2 { font-size: 18px; font-weight: 800; }
+  .section-header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .chart-container { position: relative; height: 180px; }
+  .mini-chart { position: relative; height: 130px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🔐</div>
+    <div>
+      <div class="logo-text">IAM-Lab-Pro</div>
+      <div class="logo-sub">Identity Platform</div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Core</div>
+    <div class="nav-item active" onclick="showPanel('dashboard')"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPanel('users')"><span class="icon">👥</span> User Directory <span class="nav-badge green" id="user-count-badge">247</span></div>
+    <div class="nav-item" onclick="showPanel('lifecycle')"><span class="icon">🔄</span> Lifecycle (JML)</div>
+    <div class="nav-section">Access</div>
+    <div class="nav-item" onclick="showPanel('roles')"><span class="icon">🎭</span> Roles & RBAC</div>
+    <div class="nav-item" onclick="showPanel('requests')"><span class="icon">📝</span> Access Requests <span class="nav-badge" id="req-badge">3</span></div>
+    <div class="nav-section">Security</div>
+    <div class="nav-item" onclick="showPanel('mfa')"><span class="icon">🛡️</span> MFA Status</div>
+    <div class="nav-item" onclick="showPanel('risk')"><span class="icon">⚠️</span> Risk Center <span class="nav-badge" id="risk-badge">5</span></div>
+    <div class="nav-item" onclick="showPanel('audit')"><span class="icon">📜</span> Audit Log</div>
+    <div class="nav-section">Governance</div>
+    <div class="nav-item" onclick="showPanel('governance')"><span class="icon">🏛️</span> Certifications</div>
+  </div>
+  <div class="user-area">
+    <div class="avatar">LS</div>
+    <div class="user-info">
+      <div class="user-name">Luigi St Fort</div>
+      <div class="user-role">IAM Administrator</div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Identity Overview</div>
+    <div class="topbar-badge"><div class="dot"></div> corp.iam.local</div>
+    <div class="topbar-badge">🌐 Okta Sync: Active</div>
+    <div class="topbar-badge">⚡ Entra ID: Connected</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-label">Total Identities</div>
+          <div class="stat-value" id="stat-total">247</div>
+          <div class="stat-sub"><span class="trend-up">↑ 12</span> this month</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">MFA Enrolled</div>
+          <div class="stat-value" id="stat-mfa">89%</div>
+          <div class="stat-sub">219 / 247 users</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Pending Requests</div>
+          <div class="stat-value" id="stat-pending">3</div>
+          <div class="stat-sub"><span class="trend-down">⚠ 2 overdue</span></div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Risk Alerts</div>
+          <div class="stat-value" id="stat-risk">5</div>
+          <div class="stat-sub">Require review</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><span>Identity Activity (14 Days)</span></div>
+          <div class="chart-container"><canvas id="activityChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Access by Department</span></div>
+          <div class="chart-container"><canvas id="deptChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="three-col">
+        <div class="card">
+          <div class="card-title"><span>MFA Adoption</span></div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>Okta Verify Push</span><span style="color:var(--green);font-weight:700">61%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:61%"></div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>TOTP (Authenticator)</span><span style="color:var(--accent);font-weight:700">22%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:22%"></div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>FIDO2 / WebAuthn</span><span style="color:var(--purple);font-weight:700">6%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:6%;background:var(--purple)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>Not Enrolled</span><span style="color:var(--red);font-weight:700">11%</span></div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:11%"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Recent Provisioning</span></div>
+          <div class="log-entry"><div class="log-time">09:14</div><div class="log-msg"><span class="log-user">sarah.chen</span> provisioned to Finance Apps</div></div>
+          <div class="log-entry"><div class="log-time">08:52</div><div class="log-msg"><span class="log-user">marcus.johnson</span> role updated → Sales Manager</div></div>
+          <div class="log-entry"><div class="log-time">08:21</div><div class="log-msg"><span class="log-user">priya.patel</span> offboarded — access revoked</div></div>
+          <div class="log-entry"><div class="log-time">07:45</div><div class="log-msg"><span class="log-user">dev.service.acct</span> password rotated (CPM)</div></div>
+          <div class="log-entry"><div class="log-time">07:10</div><div class="log-msg"><span class="log-user">tom.wright</span> MFA enrollment complete</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Compliance Score</span></div>
+          <div style="text-align:center;padding:10px 0">
+            <div style="font-size:42px;font-weight:800;color:var(--green)">94<span style="font-size:20px;color:var(--muted)">%</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Overall IAM Health</div>
+          </div>
+          <div style="font-size:11px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between"><span>✅ Least Privilege</span><span style="color:var(--green)">Compliant</span></div>
+            <div style="display:flex;justify-content:space-between"><span>✅ MFA Policy</span><span style="color:var(--green)">89% coverage</span></div>
+            <div style="display:flex;justify-content:space-between"><span>⚠️ Orphaned Accounts</span><span style="color:var(--yellow)">3 found</span></div>
+            <div style="display:flex;justify-content:space-between"><span>✅ Access Reviews</span><span style="color:var(--green)">Current</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── USERS ── -->
+    <div class="panel" id="panel-users">
+      <div class="section-header">
+        <div><h2>User Directory</h2><p>Manage all identities across the organization</p></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="search-box" placeholder="🔍  Search users..." oninput="filterUsers(this.value)">
+          <button class="btn btn-primary" onclick="openModal('add-user')">＋ New Identity</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table id="user-table">
+            <thead><tr><th>Identity</th><th>Department</th><th>Role</th><th>Status</th><th>MFA</th><th>Last Login</th><th>Risk</th><th>Actions</th></tr></thead>
+            <tbody id="user-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LIFECYCLE ── -->
+    <div class="panel" id="panel-lifecycle">
+      <div class="section-header">
+        <div><h2>Identity Lifecycle (JML)</h2><p>Joiner · Mover · Leaver workflow engine</p></div>
+      </div>
+      <div class="three-col">
+        <div class="card" style="border-top: 2px solid var(--green)">
+          <div class="card-title"><span>🟢 Joiner</span></div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">New employee onboarding workflow</p>
+          <div class="flow-steps">
+            <div class="flow-step done"><div class="step-num">01</div><div class="step-label">HR Trigger</div></div>
+            <div class="flow-step done"><div class="step-num">02</div><div class="step-label">Create AD</div></div>
+            <div class="flow-step active"><div class="step-num">03</div><div class="step-label">Sync Entra</div></div>
+            <div class="flow-step"><div class="step-num">04</div><div class="step-label">Assign Role</div></div>
+            <div class="flow-step"><div class="step-num">05</div><div class="step-label">MFA Enroll</div></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn btn-success" style="width:100%" onclick="runJoiner()">▶ Run Joiner Workflow</button></div>
+        </div>
+        <div class="card" style="border-top: 2px solid var(--yellow)">
+          <div class="card-title"><span>🟡 Mover</span></div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Role change / transfer workflow</p>
+          <div class="flow-steps">
+            <div class="flow-step done"><div class="step-num">01</div><div class="step-label">HR Update</div></div>
+            <div class="flow-step done"><div class="step-num">02</div><div class="step-label">Remove Old</div></div>
+            <div class="flow-step done"><div class="step-num">03</div><div class="step-label">Add New</div></div>
+            <div class="flow-step active"><div class="step-num">04</div><div class="step-label">Sync Apps</div></div>
+            <div class="flow-step"><div class="step-num">05</div><div class="step-label">Notify</div></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn btn-ghost" style="width:100%" onclick="runMover()">▶ Run Mover Workflow</button></div>
+        </div>
+        <div class="card" style="border-top: 2px solid var(--red)">
+          <div class="card-title"><span>🔴 Leaver</span></div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Termination / offboarding workflow</p>
+          <div class="flow-steps">
+            <div class="flow-step done"><div class="step-num">01</div><div class="step-label">Disable Acct</div></div>
+            <div class="flow-step done"><div class="step-num">02</div><div class="step-label">Revoke Tokens</div></div>
+            <div class="flow-step done"><div class="step-num">03</div><div class="step-label">Remove Groups</div></div>
+            <div class="flow-step done"><div class="step-num">04</div><div class="step-label">Archive Mail</div></div>
+            <div class="flow-step active"><div class="step-num">05</div><div class="step-label">Audit Log</div></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn btn-danger" style="width:100%" onclick="runLeaver()">▶ Run Leaver Workflow</button></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><span>Lifecycle Events (This Week)</span></div>
+          <div class="mini-chart"><canvas id="lifecycleChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Pending Lifecycle Tasks</span></div>
+          <div class="req-card"><div class="req-icon">👤</div><div class="req-info"><div class="req-title">New Hire — David Kim</div><div class="req-meta">JOINER · IT Department · Start Date: Tomorrow</div></div><span class="badge badge-yellow">Pending</span></div>
+          <div class="req-card"><div class="req-icon">🔄</div><div class="req-info"><div class="req-title">Transfer — Anna Reyes</div><div class="req-meta">MOVER · Finance → HR · Effective Today</div></div><span class="badge badge-blue">In Progress</span></div>
+          <div class="req-card"><div class="req-icon">🚪</div><div class="req-info"><div class="req-title">Termination — Robert Mills</div><div class="req-meta">LEAVER · Sales Dept · Last Day: Yesterday</div></div><span class="badge badge-green">Complete</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROLES ── -->
+    <div class="panel" id="panel-roles">
+      <div class="section-header">
+        <div><h2>RBAC Role Matrix</h2><p>Role-based access control permissions mapping</p></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title"><span>Permission Matrix — Core Systems</span></div>
+        <div class="matrix-wrap">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th>Role</th><th>AD Admin</th><th>Okta Admin</th><th>Finance GL</th><th>HR System</th><th>CRM</th><th>Dev Infra</th><th>ServiceNow</th><th>Email/Teams</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>🔴 Global Admin</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td></tr>
+              <tr><td>🔴 IAM Admin</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓ Full</td><td class="cell-no">—</td><td class="cell-partial">△ Read</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓</td></tr>
+              <tr><td>🟡 Helpdesk</td><td class="cell-partial">△ Reset PW</td><td class="cell-partial">△ Unlock</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✓ Full</td><td class="cell-yes">✓</td></tr>
+              <tr><td>🟡 Finance Mgr</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✓ Full</td><td class="cell-no">—</td><td class="cell-partial">△ Read</td><td class="cell-no">—</td><td class="cell-partial">△ Request</td><td class="cell-yes">✓</td></tr>
+              <tr><td>🟢 Finance Analyst</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-partial">△ Read</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-partial">△ Request</td><td class="cell-yes">✓</td></tr>
+              <tr><td>🟡 HR Manager</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-yes">✓ Full</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-partial">△ Request</td><td class="cell-yes">✓</td></tr>
+              <tr><td>🟡 Sales Manager</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-partial">△ Reports</td><td class="cell-no">—</td><td class="cell-yes">✓ Full</td><td class="cell-no">—</td><td class="cell-partial">△ Request</td><td class="cell-yes">✓</td></tr>
+              <tr><td>🟢 Base Employee</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-no">—</td><td class="cell-partial">△ Request</td><td class="cell-yes">✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--muted);font-family:var(--mono)">
+          ✓ Full = Full CRUD &nbsp;|&nbsp; △ Read / Partial = Limited access &nbsp;|&nbsp; — = No access (least privilege enforced)
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><span>Users by Role</span></div>
+          <div class="mini-chart"><canvas id="roleChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Privilege Levels</span></div>
+          <div style="margin-top:8px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>🔴 Critical (Admin)</span><span><b>4</b> users</span></div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:2%"></div></div>
+          </div>
+          <div style="margin-top:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>🟡 Elevated</span><span><b>38</b> users</span></div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:15%"></div></div>
+          </div>
+          <div style="margin-top:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>🟢 Standard</span><span><b>205</b> users</span></div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:83%"></div></div>
+          </div>
+          <div style="margin-top:14px;padding:10px;background:var(--surface);border-radius:6px;font-size:11px;color:var(--muted)">
+            ✅ Zero Trust: Least privilege enforced.<br>Admin accounts separated from daily-use accounts.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REQUESTS ── -->
+    <div class="panel" id="panel-requests">
+      <div class="section-header">
+        <div><h2>Access Requests</h2><p>Approve, deny, and track access provisioning</p></div>
+        <button class="btn btn-primary" onclick="openModal('new-request')">＋ New Request</button>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title"><span>⏳ Pending Approval</span></div>
+        <div id="pending-requests"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>✅ Recent Decisions</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Requester</th><th>Resource</th><th>Justification</th><th>Approver</th><th>Decision</th><th>Date</th></tr></thead>
+            <tbody id="completed-requests"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MFA ── -->
+    <div class="panel" id="panel-mfa">
+      <div class="section-header">
+        <div><h2>MFA Enrollment Status</h2><p>Multi-factor authentication coverage and compliance</p></div>
+        <button class="btn btn-primary" onclick="sendMFAReminders()">📧 Send Enrollment Reminders</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="stat-label">Enrolled</div><div class="stat-value">219</div><div class="stat-sub">89% of workforce</div></div>
+        <div class="stat-card red"><div class="stat-label">Not Enrolled</div><div class="stat-value">28</div><div class="stat-sub">Compliance risk</div></div>
+        <div class="stat-card blue"><div class="stat-label">FIDO2 / Passkey</div><div class="stat-value">15</div><div class="stat-sub">Phishing-resistant</div></div>
+        <div class="stat-card purple"><div class="stat-label">MFA Fatigue Alerts</div><div class="stat-value">2</div><div class="stat-sub">Review required</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><span>Enrollment by Method</span></div>
+          <div class="chart-container"><canvas id="mfaChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>🚨 Non-Enrolled Users (Overdue)</span></div>
+          <div id="mfa-unenrolled"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RISK ── -->
+    <div class="panel" id="panel-risk">
+      <div class="section-header">
+        <div><h2>Risk Center</h2><p>Anomaly detection · Impossible travel · Dormant accounts</p></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><span>🔴 High-Risk Users</span></div>
+          <div id="risk-users-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>Risk Event Timeline</span></div>
+          <div class="chart-container"><canvas id="riskChart"></canvas></div>
+        </div>
+      </div>
+      <div class="three-col" style="margin-top:14px">
+        <div class="card" style="border-top:2px solid var(--red)">
+          <div class="card-title"><span>🌍 Impossible Travel</span></div>
+          <div style="font-size:12px;margin-bottom:8px"><b>j.carter@corp.local</b></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Login from New York, NY</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">2 hours later: Login from Lagos, Nigeria</div>
+          <span class="badge badge-red">FLAGGED</span>
+          <div style="margin-top:10px;display:flex;gap:6px">
+            <button class="btn btn-danger" style="font-size:11px;padding:5px 10px" onclick="blockUser('j.carter')">🔒 Disable</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px">📋 Investigate</button>
+          </div>
+        </div>
+        <div class="card" style="border-top:2px solid var(--yellow)">
+          <div class="card-title"><span>💤 Dormant Accounts</span></div>
+          <div style="font-size:26px;font-weight:800;color:var(--yellow);margin-bottom:4px">7</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Accounts inactive 90+ days</div>
+          <div style="font-size:11px;margin-bottom:4px">• m.roberts — Last login: 142d ago</div>
+          <div style="font-size:11px;margin-bottom:4px">• k.wong — Last login: 98d ago</div>
+          <div style="font-size:11px;margin-bottom:12px">• d.harris — Last login: 105d ago</div>
+          <button class="btn btn-ghost" style="font-size:11px;width:100%" onclick="disableDormant()">🗂 Disable All Dormant</button>
+        </div>
+        <div class="card" style="border-top:2px solid var(--purple)">
+          <div class="card-title"><span>🔑 Privileged Access</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Admin accounts requiring review</div>
+          <div style="font-size:11px;margin-bottom:6px;display:flex;justify-content:space-between"><span>admin.luigi</span><span class="badge badge-green">Active MFA</span></div>
+          <div style="font-size:11px;margin-bottom:6px;display:flex;justify-content:space-between"><span>svc.backup.acct</span><span class="badge badge-yellow">No MFA</span></div>
+          <div style="font-size:11px;margin-bottom:6px;display:flex;justify-content:space-between"><span>admin.legacy</span><span class="badge badge-red">Stale PW</span></div>
+          <div style="font-size:11px;margin-bottom:12px;display:flex;justify-content:space-between"><span>svc.okta.sync</span><span class="badge badge-green">Compliant</span></div>
+          <button class="btn btn-danger" style="font-size:11px;width:100%">🔐 Review PAM Policy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AUDIT LOG ── -->
+    <div class="panel" id="panel-audit">
+      <div class="section-header">
+        <div><h2>Audit Log</h2><p>All identity events with Windows Security Event ID mapping</p></div>
+        <div style="display:flex;gap:8px">
+          <input class="search-box" placeholder="🔍  Filter events..." style="width:200px" oninput="filterLogs(this.value)">
+          <button class="btn btn-ghost">📥 Export CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="audit-log-container"></div>
+      </div>
+    </div>
+
+    <!-- ── GOVERNANCE ── -->
+    <div class="panel" id="panel-governance">
+      <div class="section-header">
+        <div><h2>Access Certifications</h2><p>Identity governance · Access reviews · Orphan detection</p></div>
+        <button class="btn btn-primary" onclick="launchCampaign()">🚀 Launch Campaign</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-label">Active Campaign</div><div class="stat-value">Q1-25</div><div class="stat-sub">7 days remaining</div></div>
+        <div class="stat-card green"><div class="stat-label">Certified</div><div class="stat-value">71%</div><div class="stat-sub">176 / 247 decisions</div></div>
+        <div class="stat-card yellow"><div class="stat-label">Pending Review</div><div class="stat-value">57</div><div class="stat-sub">Awaiting managers</div></div>
+        <div class="stat-card red"><div class="stat-label">Orphaned Accounts</div><div class="stat-value">3</div><div class="stat-sub">No active owner</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><span>Campaign Progress by Department</span></div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>Finance</span><span style="color:var(--green);font-weight:700">95%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:95%"></div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>IT</span><span style="color:var(--green);font-weight:700">88%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:88%"></div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>Sales</span><span style="color:var(--yellow);font-weight:700">62%</span></div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:62%"></div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>HR</span><span style="color:var(--yellow);font-weight:700">55%</span></div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:55%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>Operations</span><span style="color:var(--red);font-weight:700">38%</span></div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:38%"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span>🔴 Orphaned Accounts — Immediate Action</span></div>
+          <div class="req-card" style="border-left:2px solid var(--red)"><div class="req-icon">👻</div><div class="req-info"><div class="req-title">svc.legacy.db</div><div class="req-meta">Service account · Owner terminated 6 months ago · Has admin rights</div></div><button class="btn btn-danger" style="font-size:11px" onclick="disableOrphan('svc.legacy.db')">Disable</button></div>
+          <div class="req-card" style="border-left:2px solid var(--red)"><div class="req-icon">👻</div><div class="req-info"><div class="req-title">test.admin.acct</div><div class="req-meta">Test account · Never assigned owner · 180 days old</div></div><button class="btn btn-danger" style="font-size:11px" onclick="disableOrphan('test.admin.acct')">Disable</button></div>
+          <div class="req-card" style="border-left:2px solid var(--yellow)"><div class="req-icon">👻</div><div class="req-info"><div class="req-title">contractor.smith</div><div class="req-meta">Contract ended · Access not revoked · Still has VPN access</div></div><button class="btn btn-danger" style="font-size:11px" onclick="disableOrphan('contractor.smith')">Disable</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+let users = [
+  { id:1, name:"Luigi St Fort",    email:"l.stfort@corp.local",    dept:"IT",      role:"IAM Admin",      status:"Active",   mfa:"Push",   lastLogin:"Today 09:14",  risk:"Low" },
+  { id:2, name:"Sarah Chen",       email:"s.chen@corp.local",      dept:"Finance", role:"Finance Manager", status:"Active",   mfa:"TOTP",   lastLogin:"Today 08:52",  risk:"Low" },
+  { id:3, name:"Marcus Johnson",   email:"m.johnson@corp.local",   dept:"Sales",   role:"Sales Manager",   status:"Active",   mfa:"Push",   lastLogin:"Today 08:21",  risk:"Low" },
+  { id:4, name:"Priya Patel",      email:"p.patel@corp.local",     dept:"HR",      role:"HR Manager",      status:"Disabled", mfa:"None",   lastLogin:"7 days ago",   risk:"Medium" },
+  { id:5, name:"Tom Wright",       email:"t.wright@corp.local",    dept:"IT",      role:"Helpdesk",        status:"Active",   mfa:"Push",   lastLogin:"Today 07:45",  risk:"Low" },
+  { id:6, name:"Jennifer Carter",  email:"j.carter@corp.local",    dept:"Sales",   role:"Sales Analyst",   status:"Active",   mfa:"Push",   lastLogin:"1 hr ago",     risk:"High" },
+  { id:7, name:"David Kim",        email:"d.kim@corp.local",       dept:"Finance", role:"Finance Analyst",  status:"Active",   mfa:"FIDO2",  lastLogin:"Today 06:30",  risk:"Low" },
+  { id:8, name:"Anna Reyes",       email:"a.reyes@corp.local",     dept:"HR",      role:"HR Analyst",      status:"Active",   mfa:"TOTP",   lastLogin:"Yesterday",    risk:"Low" },
+  { id:9, name:"Robert Mills",     email:"r.mills@corp.local",     dept:"Sales",   role:"Base Employee",   status:"Disabled", mfa:"None",   lastLogin:"14 days ago",  risk:"Medium" },
+  { id:10, name:"Kevin Wong",      email:"k.wong@corp.local",      dept:"IT",      role:"Base Employee",   status:"Active",   mfa:"None",   lastLogin:"98 days ago",  risk:"High" },
+];
+
+let pendingReqs = [
+  { id:1, requester:"David Kim",      resource:"GitHub Enterprise",   justification:"DevOps project access needed for Q1",     risk:"Low" },
+  { id:2, requester:"Anna Reyes",     resource:"Finance GL — Read",   justification:"Cross-departmental reporting project",    risk:"Medium" },
+  { id:3, requester:"Tom Wright",     resource:"CyberArk Admin",      justification:"PAM administration training lab access",  risk:"High" },
+];
+
+let completedReqs = [
+  { requester:"Sarah Chen",    resource:"Power BI Premium",    justification:"Finance dashboards",  approver:"Luigi St Fort", decision:"Approved", date:"2025-01-14" },
+  { requester:"Marcus Johnson", resource:"Salesforce Admin",   justification:"Team management",     approver:"Luigi St Fort", decision:"Approved", date:"2025-01-13" },
+  { requester:"Robert Mills",  resource:"AWS Console",         justification:"No business need",    approver:"Luigi St Fort", decision:"Denied",   date:"2025-01-12" },
+  { requester:"Jennifer Carter", resource:"HR System Read",   justification:"Wrong department",    approver:"Luigi St Fort", decision:"Denied",   date:"2025-01-11" },
+];
+
+let auditEvents = [
+  { time:"2025-01-15 09:14", eventId:"4720", user:"l.stfort", msg:"User account CREATED — d.kim@corp.local, IT Department, Helpdesk role assigned", level:"info" },
+  { time:"2025-01-15 09:12", eventId:"4732", user:"l.stfort", msg:"User ADDED to security group — d.kim added to IT-Standard, VPN-Users", level:"info" },
+  { time:"2025-01-15 08:52", eventId:"4624", user:"s.chen",   msg:"Successful LOGON — s.chen@corp.local from 10.0.1.45 (Finance workstation)", level:"success" },
+  { time:"2025-01-15 08:31", eventId:"4740", user:"system",   msg:"Account LOCKOUT — r.mills@corp.local — 5 failed password attempts", level:"warning" },
+  { time:"2025-01-15 08:21", eventId:"4726", user:"l.stfort", msg:"User account DISABLED — p.patel@corp.local (Leaver workflow triggered)", level:"warning" },
+  { time:"2025-01-15 08:20", eventId:"4733", user:"l.stfort", msg:"User REMOVED from all groups — p.patel@corp.local — 7 groups removed", level:"warning" },
+  { time:"2025-01-15 07:45", eventId:"4723", user:"t.wright", msg:"User changed OWN password — t.wright@corp.local — forced reset on first login", level:"info" },
+  { time:"2025-01-15 07:30", eventId:"4625", user:"j.carter", msg:"FAILED LOGON — j.carter@corp.local from 185.220.101.42 (Tor exit node)", level:"danger" },
+  { time:"2025-01-15 07:29", eventId:"4624", user:"j.carter", msg:"Successful LOGON — j.carter@corp.local from JFK Airport WiFi (New York)", level:"info" },
+  { time:"2025-01-15 05:15", eventId:"4624", user:"j.carter", msg:"Suspicious LOGON — j.carter@corp.local from Lagos, Nigeria (IMPOSSIBLE TRAVEL)", level:"danger" },
+  { time:"2025-01-14 17:30", eventId:"4648", user:"l.stfort", msg:"EXPLICIT credential logon — admin.luigi elevated to Global Admin for maintenance window (PIM JIT)", level:"warning" },
+  { time:"2025-01-14 16:00", eventId:"4672", user:"l.stfort", msg:"Special privileges ASSIGNED — admin.luigi: SeSecurityPrivilege, SeTakeOwnership", level:"warning" },
+  { time:"2025-01-14 14:22", eventId:"4720", user:"l.stfort", msg:"User account CREATED — svc.okta.sync service account with limited AD replication permissions", level:"info" },
+  { time:"2025-01-14 11:45", eventId:"4771", user:"k.wong",   msg:"Kerberos pre-authentication FAILED — k.wong@corp.local — account not seen in 98 days", level:"warning" },
+  { time:"2025-01-14 09:00", eventId:"4624", user:"a.reyes",  msg:"Successful LOGON — a.reyes@corp.local with MFA (TOTP) from compliant device", level:"success" },
+];
+
+let riskUsers = [
+  { name:"Jennifer Carter", reason:"Impossible travel detected",    score:95, color:"#ef4444" },
+  { name:"Kevin Wong",      reason:"Dormant 98 days, no MFA",       score:78, color:"#f59e0b" },
+  { name:"Priya Patel",     reason:"Disabled acct with open tokens", score:65, color:"#f59e0b" },
+  { name:"Robert Mills",    reason:"Account lockout + disabled",     score:55, color:"#f59e0b" },
+  { name:"svc.legacy.db",   reason:"Orphaned service account",       score:88, color:"#ef4444" },
+];
+
+let mfaUnenrolled = [
+  { name:"Kevin Wong",     dept:"IT",      days:98  },
+  { name:"Robert Mills",  dept:"Sales",   days:14  },
+  { name:"Priya Patel",   dept:"HR",      days:22  },
+  { name:"temp.contractor", dept:"Ops",   days:45  },
+];
+
+// ── NAVIGATION ───────────────────────────────────────────────────────────────
+const titles = { dashboard:"Identity Overview", users:"User Directory", lifecycle:"Identity Lifecycle (JML)", roles:"Roles & RBAC", requests:"Access Requests", mfa:"MFA Enrollment", risk:"Risk Center", audit:"Audit Log", governance:"Access Certifications" };
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => { if (n.getAttribute('onclick')?.includes(id)) n.classList.add('active'); });
+  document.getElementById('page-title').textContent = titles[id] || id;
+}
+
+// ── RENDER USERS ──────────────────────────────────────────────────────────────
+function renderUsers(list) {
+  const riskBadge = r => r === "High" ? "badge-red" : r === "Medium" ? "badge-yellow" : "badge-green";
+  const mfaBadge = m => m === "None" ? "badge-red" : m === "FIDO2" ? "badge-purple" : "badge-green";
+  const statusBadge = s => s === "Active" ? "badge-green" : "badge-gray";
+  document.getElementById('user-tbody').innerHTML = list.map(u => `
+    <tr>
+      <td><div style="font-weight:700;font-size:12px">${u.name}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${u.email}</div></td>
+      <td><span class="badge badge-blue">${u.dept}</span></td>
+      <td style="font-size:12px">${u.role}</td>
+      <td><span class="badge ${statusBadge(u.status)}">${u.status}</span></td>
+      <td><span class="badge ${mfaBadge(u.mfa)}">${u.mfa}</span></td>
+      <td style="font-size:11px;color:var(--muted);font-family:var(--mono)">${u.lastLogin}</td>
+      <td><span class="badge ${riskBadge(u.risk)}">${u.risk}</span></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 8px" onclick="editUser(${u.id})">Edit</button>
+        <button class="btn btn-danger" style="font-size:10px;padding:4px 8px" onclick="disableUser(${u.id})">🔒</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function filterUsers(q) {
+  const filtered = q ? users.filter(u => u.name.toLowerCase().includes(q.toLowerCase()) || u.dept.toLowerCase().includes(q.toLowerCase()) || u.role.toLowerCase().includes(q.toLowerCase())) : users;
+  renderUsers(filtered);
+}
+
+// ── RENDER REQUESTS ────────────────────────────────────────────────────────
+function renderRequests() {
+  const riskColor = r => r === "High" ? "var(--red)" : r === "Medium" ? "var(--yellow)" : "var(--green)";
+  document.getElementById('pending-requests').innerHTML = pendingReqs.length === 0
+    ? '<div style="text-align:center;padding:20px;color:var(--muted)">✅ No pending requests</div>'
+    : pendingReqs.map(r => `
+    <div class="req-card" style="border-left:2px solid ${riskColor(r.risk)}">
+      <div class="req-icon">🔑</div>
+      <div class="req-info">
+        <div class="req-title">${r.requester} → <span style="color:var(--accent)">${r.resource}</span></div>
+        <div class="req-meta">${r.justification} &nbsp;|&nbsp; Risk: <span style="color:${riskColor(r.risk)}">${r.risk}</span></div>
+      </div>
+      <div class="req-actions">
+        <button class="btn btn-success" style="font-size:11px" onclick="approveReq(${r.id})">✓ Approve</button>
+        <button class="btn btn-danger" style="font-size:11px" onclick="denyReq(${r.id})">✕ Deny</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('completed-requests').innerHTML = completedReqs.map((r,i) => `
+    <tr>
+      <td style="font-size:12px;font-weight:700">${r.requester}</td>
+      <td style="font-size:12px">${r.resource}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.justification}</td>
+      <td style="font-size:11px">${r.approver}</td>
+      <td><span class="badge ${r.decision === 'Approved' ? 'badge-green' : 'badge-red'}">${r.decision}</span></td>
+      <td style="font-size:11px;font-family:var(--mono);color:var(--muted)">${r.date}</td>
+    </tr>`).join('');
+}
+
+function approveReq(id) {
+  const req = pendingReqs.find(r => r.id === id);
+  completedReqs.unshift({ requester:req.requester, resource:req.resource, justification:req.justification, approver:"Luigi St Fort", decision:"Approved", date:"2025-01-15" });
+  pendingReqs = pendingReqs.filter(r => r.id !== id);
+  updateBadges();
+  renderRequests();
+  toast(`✅ Access APPROVED — ${req.requester} provisioned to ${req.resource}`, 'success');
+}
+
+function denyReq(id) {
+  const req = pendingReqs.find(r => r.id === id);
+  completedReqs.unshift({ requester:req.requester, resource:req.resource, justification:req.justification, approver:"Luigi St Fort", decision:"Denied", date:"2025-01-15" });
+  pendingReqs = pendingReqs.filter(r => r.id !== id);
+  updateBadges();
+  renderRequests();
+  toast(`🚫 Access DENIED — ${req.requester} request for ${req.resource} rejected`, 'error');
+}
+
+// ── RENDER AUDIT LOG ───────────────────────────────────────────────────────
+function renderAuditLog(list) {
+  const levelColor = l => l === "danger" ? "var(--red)" : l === "warning" ? "var(--yellow)" : l === "success" ? "var(--green)" : "var(--accent)";
+  const levelIcon = l => l === "danger" ? "🔴" : l === "warning" ? "🟡" : l === "success" ? "🟢" : "🔵";
+  document.getElementById('audit-log-container').innerHTML = list.map(e => `
+    <div class="log-entry">
+      <div class="log-time">${e.time.split(' ')[1]}<br><span style="font-size:9px;color:var(--muted)">${e.time.split(' ')[0]}</span></div>
+      <div><span class="log-event-id">EVT:${e.eventId}</span></div>
+      <div style="font-size:13px">${levelIcon(e.level)}</div>
+      <div class="log-msg">${e.msg.replace(/@corp\.local/g, '<span style="color:var(--muted)">@corp.local</span>')}</div>
+    </div>`).join('');
+}
+
+function filterLogs(q) {
+  renderAuditLog(q ? auditEvents.filter(e => e.msg.toLowerCase().includes(q.toLowerCase()) || e.user.toLowerCase().includes(q.toLowerCase()) || e.eventId.includes(q)) : auditEvents);
+}
+
+// ── RENDER RISK ────────────────────────────────────────────────────────────
+function renderRisk() {
+  document.getElementById('risk-users-list').innerHTML = riskUsers.map(u => `
+    <div class="risk-item">
+      <div class="risk-avatar" style="background:${u.color}22;color:${u.color}">${u.name.split(' ').map(n=>n[0]).join('')}</div>
+      <div style="flex:1">
+        <div class="risk-name">${u.name}</div>
+        <div class="risk-reason">${u.reason}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);color:${u.color};font-weight:700;text-align:right;margin-bottom:4px">${u.score}</div>
+        <div class="risk-bar-wrap"><div class="risk-bar" style="width:${u.score}%;background:${u.color}"></div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── RENDER MFA ─────────────────────────────────────────────────────────────
+function renderMFA() {
+  document.getElementById('mfa-unenrolled').innerHTML = mfaUnenrolled.map(u => `
+    <div class="req-card">
+      <div class="req-icon">⚠️</div>
+      <div class="req-info">
+        <div class="req-title">${u.name}</div>
+        <div class="req-meta">${u.dept} · MFA overdue ${u.days} days</div>
+      </div>
+      <button class="btn btn-ghost" style="font-size:11px" onclick="sendMFANudge('${u.name}')">📧 Remind</button>
+    </div>`).join('');
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────────────────
+function disableUser(id) {
+  const u = users.find(x => x.id === id);
+  u.status = "Disabled"; u.risk = "Low";
+  renderUsers(users);
+  toast(`🔒 Account DISABLED — ${u.name} access revoked`, 'warning');
+}
+
+function editUser(id) {
+  const u = users.find(x => x.id === id);
+  toast(`✏️ Editing ${u.name} — role: ${u.role}`, 'info');
+}
+
+function blockUser(username) { toast(`🔒 ACCOUNT BLOCKED — ${username} disabled immediately, tokens revoked`, 'error'); }
+function disableDormant() { toast(`🗂 7 dormant accounts disabled and moved to Disabled OU`, 'warning'); }
+function disableOrphan(name) { toast(`🔒 Orphaned account DISABLED — ${name} removed from all groups`, 'warning'); }
+function sendMFAReminders() { toast(`📧 MFA enrollment reminders sent to 28 non-enrolled users`, 'success'); }
+function sendMFANudge(name) { toast(`📧 Reminder sent to ${name}`, 'success'); }
+function launchCampaign() { toast(`🚀 Access certification campaign Q2-2025 LAUNCHED — 247 users notified`, 'success'); }
+
+function runJoiner() {
+  const steps = ["Creating AD account...", "Syncing to Entra ID...", "Assigning RBAC roles...", "Provisioning apps via SCIM...", "Sending MFA enrollment link...", "✅ Joiner workflow COMPLETE — David Kim provisioned"];
+  steps.forEach((s, i) => setTimeout(() => toast(s, i === steps.length-1 ? 'success' : 'info'), i * 600));
+}
+function runMover() {
+  const steps = ["Removing old role — Finance...", "Assigning new role — HR Analyst...", "Updating app access...", "✅ Mover workflow COMPLETE — Anna Reyes transferred to HR"];
+  steps.forEach((s, i) => setTimeout(() => toast(s, i === steps.length-1 ? 'success' : 'info'), i * 700));
+}
+function runLeaver() {
+  const steps = ["Disabling account...", "Revoking all OAuth tokens...", "Removing from 9 groups...", "Archiving mailbox...", "✅ Leaver workflow COMPLETE — Robert Mills fully offboarded"];
+  steps.forEach((s, i) => setTimeout(() => toast(s, i === steps.length-1 ? 'success' : 'error'), i * 600));
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openModal(type) {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  if (type === 'add-user') {
+    content.innerHTML = `
+      <div class="modal-title">➕ Create New Identity <span class="close-btn" onclick="closeModal()">×</span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-input" placeholder="First name" id="fn"></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" placeholder="Last name" id="ln"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" placeholder="user@corp.local" id="em"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Department</label>
+          <select class="form-select" id="dp"><option>IT</option><option>Finance</option><option>HR</option><option>Sales</option><option>Operations</option></select></div>
+        <div class="form-group"><label class="form-label">Role</label>
+          <select class="form-select" id="rl"><option>Base Employee</option><option>Helpdesk</option><option>Finance Analyst</option><option>HR Analyst</option><option>Sales Analyst</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">MFA Method</label>
+        <select class="form-select" id="mf"><option>Push (Okta Verify)</option><option>TOTP</option><option>FIDO2</option></select></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createUser()">✓ Provision Identity</button>
+      </div>`;
+  } else if (type === 'new-request') {
+    content.innerHTML = `
+      <div class="modal-title">📝 New Access Request <span class="close-btn" onclick="closeModal()">×</span></div>
+      <div class="form-group"><label class="form-label">Requester</label>
+        <select class="form-select" id="req-user">${users.filter(u=>u.status==='Active').map(u=>`<option>${u.name}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Resource / Application</label><input class="form-input" placeholder="e.g. Salesforce, GitHub, AWS Console" id="req-res"></div>
+      <div class="form-group"><label class="form-label">Business Justification</label><input class="form-input" placeholder="Reason for access..." id="req-just"></div>
+      <div class="form-group"><label class="form-label">Risk Level</label>
+        <select class="form-select" id="req-risk"><option>Low</option><option>Medium</option><option>High</option></select></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitRequest()">Submit Request</button>
+      </div>`;
+  }
+  overlay.classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function createUser() {
+  const fn = document.getElementById('fn').value;
+  const ln = document.getElementById('ln').value;
+  const dp = document.getElementById('dp').value;
+  const rl = document.getElementById('rl').value;
+  if (!fn || !ln) { toast('Please enter first and last name', 'error'); return; }
+  const newUser = { id: users.length+1, name:`${fn} ${ln}`, email:`${fn.toLowerCase()}.${ln.toLowerCase()}@corp.local`, dept:dp, role:rl, status:"Active", mfa:"Push", lastLogin:"Just now", risk:"Low" };
+  users.push(newUser);
+  document.getElementById('stat-total').textContent = users.length;
+  document.getElementById('user-count-badge').textContent = users.length;
+  renderUsers(users);
+  closeModal();
+  toast(`✅ Identity PROVISIONED — ${fn} ${ln} created in AD, synced to Entra ID, apps assigned`, 'success');
+}
+
+function submitRequest() {
+  const u = document.getElementById('req-user').value;
+  const r = document.getElementById('req-res').value;
+  const j = document.getElementById('req-just').value;
+  const risk = document.getElementById('req-risk').value;
+  if (!r || !j) { toast('Please fill all fields', 'error'); return; }
+  pendingReqs.push({ id: Date.now(), requester:u, resource:r, justification:j, risk });
+  updateBadges();
+  renderRequests();
+  closeModal();
+  toast(`📝 Access request SUBMITTED — awaiting IAM team approval`, 'success');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ── BADGES ────────────────────────────────────────────────────────────────
+function updateBadges() {
+  document.getElementById('req-badge').textContent = pendingReqs.length;
+  document.getElementById('stat-pending').textContent = pendingReqs.length;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type === 'error' ? 'error' : type === 'warning' ? 'warning' : ''}`;
+  const icons = { success:'✅', error:'🚫', warning:'⚠️', info:'ℹ️' };
+  t.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(), 300); }, 3500);
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+const chartDefaults = {
+  color: '#e2e8f0',
+  plugins: { legend: { labels: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } } } },
+  scales: {
+    x: { ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } }, grid: { color: 'rgba(30,47,80,0.5)' } },
+    y: { ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } }, grid: { color: 'rgba(30,47,80,0.5)' } }
+  }
+};
+
+function initCharts() {
+  // Activity
+  new Chart(document.getElementById('activityChart'), {
+    type: 'line',
+    data: {
+      labels: ['Jan 1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'],
+      datasets: [
+        { label:'Provisioned', data:[3,5,2,8,4,6,3,9,5,7,4,6,8,3,5], borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', tension:0.4, fill:true },
+        { label:'Deprovisioned', data:[1,2,1,3,2,1,2,2,1,3,1,2,1,2,1], borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', tension:0.4, fill:true },
+        { label:'Modified', data:[5,8,6,12,7,9,5,11,8,10,6,9,12,7,8], borderColor:'#0ea5e9', backgroundColor:'rgba(14,165,233,0.05)', tension:0.4 },
+      ]
+    },
+    options: { ...chartDefaults, responsive:true, maintainAspectRatio:false }
+  });
+
+  // Dept
+  new Chart(document.getElementById('deptChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['IT','Finance','HR','Sales','Ops'],
+      datasets: [{ data:[42,58,31,76,40], backgroundColor:['#0ea5e9','#10b981','#8b5cf6','#f59e0b','#64748b'], borderWidth:0 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ color:'#64748b', font:{ size:10 }, boxWidth:12 } } }, cutout:'65%' }
+  });
+
+  // Lifecycle
+  new Chart(document.getElementById('lifecycleChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      datasets: [
+        { label:'Joiners', data:[2,1,3,0,2,0,1], backgroundColor:'rgba(16,185,129,0.7)' },
+        { label:'Movers', data:[1,3,1,2,4,0,0], backgroundColor:'rgba(245,158,11,0.7)' },
+        { label:'Leavers', data:[1,0,1,1,2,0,0], backgroundColor:'rgba(239,68,68,0.7)' },
+      ]
+    },
+    options: { ...chartDefaults, responsive:true, maintainAspectRatio:false, scales:{ x:{...chartDefaults.scales.x, stacked:true}, y:{...chartDefaults.scales.y, stacked:true} } }
+  });
+
+  // Role
+  new Chart(document.getElementById('roleChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Base Emp','Sales Mgr','Finance','HR','Helpdesk','IAM Admin','Dev'],
+      datasets: [{ data:[148,31,28,18,15,4,3], backgroundColor:'rgba(14,165,233,0.7)', borderRadius:4 }]
+    },
+    options: { ...chartDefaults, indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
+  });
+
+  // MFA
+  new Chart(document.getElementById('mfaChart'), {
+    type: 'pie',
+    data: {
+      labels: ['Okta Push','TOTP','FIDO2/Passkey','SMS (Legacy)','Not Enrolled'],
+      datasets: [{ data:[151,54,15,27,0], backgroundColor:['#10b981','#0ea5e9','#8b5cf6','#f59e0b','#ef4444'], borderWidth:0 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ color:'#64748b', font:{size:10}, boxWidth:12 } } } }
+  });
+
+  // Risk
+  new Chart(document.getElementById('riskChart'), {
+    type: 'line',
+    data: {
+      labels: ['Jan 8','9','10','11','12','13','14','15'],
+      datasets: [
+        { label:'Risk Events', data:[2,1,4,2,3,1,6,5], borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.15)', tension:0.4, fill:true },
+        { label:'Resolved', data:[2,1,3,2,2,1,4,2], borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', tension:0.4, fill:true },
+      ]
+    },
+    options: { ...chartDefaults, responsive:true, maintainAspectRatio:false }
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderUsers(users);
+  renderRequests();
+  renderAuditLog(auditEvents);
+  renderRisk();
+  renderMFA();
+  initCharts();
+  setTimeout(() => toast('🔐 IAM-Lab-Pro loaded — 247 identities synced from corp.iam.local', 'success'), 800);
+  setTimeout(() => toast('⚠️ RISK ALERT: Impossible travel detected — j.carter@corp.local', 'warning'), 2200);
+});
+</script>
+</body>
+</html>
